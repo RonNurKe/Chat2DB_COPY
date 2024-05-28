@@ -73,9 +73,10 @@ const isMatch = (target: string, searchValue: string) => {
 };
 
 // 树结构搜索
-function searchTree(treeData: ITreeNode[], searchValue: string): ITreeNode[] {
+function searchTree(treeData: ITreeNode[], searchValueOriginal: string): ITreeNode[] {
   let result: ITreeNode[] = [];
-
+    //替换特殊字符
+    const searchValue = searchValueOriginal.replace(/[*+?{}()[\]\\]/g, '\\$&');
   // 深度优先遍历
   function dfs(node: ITreeNode, path: ITreeNode[] = []) {
     if (isMatch(node.name, searchValue)) {
@@ -180,7 +181,7 @@ const Tree = (props: IProps) => {
         value={{
           treeData: treeData!,
           setTreeData: setTreeData!,
-          searchTreeData, 
+          searchTreeData,
           setSearchTreeData
         }}
       >
