@@ -34,6 +34,7 @@
       overflow: hidden;
     }
     .art-table {
+      table-layout: fixed;
       table colgroup col:nth-of-type(1) {
         min-width: 60px;
       }
@@ -87,6 +88,14 @@
     }
     .art-table-header-cell {
       padding: 0px 4px;
+    }
+    .art-table-header-cell.first.lock-left {
+      min-width: 60px; /* 根据实际内容调整 */
+      width: 60px;     /* 可选：固定宽度 */
+    }
+    .art-table-cell.first.lock-left {
+      min-width: 60px; /* 根据实际内容调整 */
+      width: 60px;     /* 可选：固定宽度 */
     }
     .art-table-header-row .art-table-header-cell:nth-of-type(1){
       .resize-handle{
@@ -264,7 +273,7 @@
   .previewTableItemContent {
     background-color: var(--color-success-bg);
   }
-  
+
 }
 .tableItemHighlight {
   background-color: var(--color-bg-subtle);

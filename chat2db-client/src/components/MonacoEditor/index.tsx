@@ -1,10 +1,10 @@
-import React, { ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, {ForwardedRef, forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import cs from 'classnames';
-import { useTheme } from '@/hooks';
+import {useTheme} from '@/hooks';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import { DatabaseTypeCode, EditorThemeType } from '@/constants';
-import { editorDefaultOptions } from './monacoEditorConfig';
-import { IQuickInputService } from 'monaco-editor/esm/vs/platform/quickinput/common/quickInput';
+import {DatabaseTypeCode, EditorThemeType} from '@/constants';
+import {editorDefaultOptions} from './monacoEditorConfig';
+import {IQuickInputService} from 'monaco-editor/esm/vs/platform/quickinput/common/quickInput';
 
 import styles from './index.less';
 
@@ -13,226 +13,468 @@ export type IEditorOptions = monaco.editor.IStandaloneEditorConstructionOptions;
 export type IEditorContentChangeEvent = monaco.editor.IModelContentChangedEvent;
 
 export type IAppendValue = {
-  text: any;
-  range?: IRangeType;
+    text: any;
+    range?: IRangeType;
 };
 
 const databaseTypeList = Object.keys(DatabaseTypeCode).map((d) => ({
-  type: d,
-  id: d,
-  label: d,
+    type: d,
+    id: d,
+    label: d,
 }));
 
 interface IProps {
-  id: string;
-  language?: string;
-  className?: string;
-  options?: IEditorOptions;
-  needDestroy?: boolean;
-  addAction?: Array<{ id: string; label: string; action: (selectedText: string, ext?: string) => void }>;
-  defaultValue?: string;
-  appendValue?: IAppendValue;
-  didMount?: (editor: IEditorIns) => any;
-  shortcutKey?: (editor, monaco, isActive: boolean) => void;
-  focusChange?: (isActive: boolean) => void;
+    id: string;
+    language?: string;
+    className?: string;
+    options?: IEditorOptions;
+    needDestroy?: boolean;
+    addAction?: Array<{ id: string; label: string; action: (selectedText: string, ext?: string) => void }>;
+    defaultValue?: string;
+    appendValue?: IAppendValue;
+    didMount?: (editor: IEditorIns) => any;
+    shortcutKey?: (editor, monaco, isActive: boolean) => void;
+    focusChange?: (isActive: boolean) => void;
 }
 
 export interface IExportRefFunction {
-  getCurrentSelectContent: () => string;
-  getAllContent: () => string;
-  setValue: (text: any, range?: IRangeType) => void;
-  // toFocus: () => void;
+    getCurrentSelectContent: () => string;
+    getCursorContent: () => string;
+    getAllContent: () => string;
+    setValue: (text: any, range?: IRangeType) => void;
+    // toFocus: () => void;
 }
 
 function MonacoEditor(props: IProps, ref: ForwardedRef<IExportRefFunction>) {
-  const {
-    id,
-    className,
-    language = 'sql',
-    didMount,
-    options,
-    defaultValue,
-    appendValue,
-    shortcutKey,
-  } = props;
-  const editorRef = useRef<IEditorIns>();
-  const quickInputCommand = useRef<any>();
-  const [appTheme] = useTheme();
-  const [isActive, setIsActive] = React.useState(false);
+    const {
+        id,
+        className,
+        language = 'sql',
+        didMount,
+        options,
+        defaultValue,
+        appendValue,
+        shortcutKey,
+    } = props;
+    const editorRef = useRef<IEditorIns>();
+    const quickInputCommand = useRef<any>();
+    const [appTheme] = useTheme();
+    const [isActive, setIsActive] = React.useState(false);
 
-  // init
-  useEffect(() => {
-    const editorIns = monaco.editor.create(document.getElementById(`monaco-editor-${id}`)!, {
-      ...editorDefaultOptions,
-      ...options,
-      value: defaultValue || '',
-      language,
-      theme: appTheme.backgroundColor,
-    });
-    editorRef.current = editorIns;
-    didMount && didMount(editorIns);
+    // init
+    useEffect(() => {
+        const editorIns = monaco.editor.create(document.getElementById(`monaco-editor-${id}`)!, {
+            ...editorDefaultOptions,
+            ...options,
+            value: defaultValue || '',
+            language,
+            theme: appTheme.backgroundColor,
+        });
+        editorRef.current = editorIns;
+        didMount && didMount(editorIns);
 
-    // Add a new command, for getting an accessor.
-    quickInputCommand.current = editorIns.addCommand(0, (accessor, func) => {
-      // a hacker way to get the input service
-      const quickInputService = accessor.get(IQuickInputService);
-      func(quickInputService);
-    });
+        // Add a new command, for getting an accessor.
+        quickInputCommand.current = editorIns.addCommand(0, (accessor, func) => {
+            // a hacker way to get the input service
+            const quickInputService = accessor.get(IQuickInputService);
+            func(quickInputService);
+        });
 
-    monaco.editor.defineTheme(EditorThemeType.DashboardLightTheme, {
-      base: 'vs',
-      inherit: true,
-      rules: [{ background: '#15161a' }] as any,
-      colors: {
-        'editor.foreground': '#000000',
-        'editor.background': '#f8f9fa', //背景色
-      },
-    });
+        monaco.editor.defineTheme(EditorThemeType.DashboardLightTheme, {
+            base: 'vs',
+            inherit: true,
+            rules: [{background: '#15161a'}] as any,
+            colors: {
+                'editor.foreground': '#000000',
+                'editor.background': '#f8f9fa', //背景色
+            },
+        });
 
-    monaco.editor.defineTheme(EditorThemeType.DashboardBlackTheme, {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [{ background: '#15161a' }] as any,
-      colors: {
-        'editor.foreground': '#ffffff',
-        'editor.background': '#131418', //背景色
-      },
-    });
+        monaco.editor.defineTheme(EditorThemeType.DashboardBlackTheme, {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [{background: '#15161a'}] as any,
+            colors: {
+                'editor.foreground': '#ffffff',
+                'editor.background': '#131418', //背景色
+            },
+        });
 
-    createAction(editorIns);
+        createAction(editorIns);
 
-    return () => {
-      if (props.needDestroy) {
-        editorRef.current && editorRef.current.dispose();
-      }
+        return () => {
+            if (props.needDestroy) {
+                editorRef.current && editorRef.current.dispose();
+            }
+        };
+    }, []);
+
+    // 如果编辑器聚焦，就设置为true
+    useEffect(() => {
+        const focus = () => {
+            setIsActive(true);
+            props.focusChange && props.focusChange(true);
+        };
+        const blur = () => {
+            setIsActive(false);
+            props.focusChange && props.focusChange(false);
+        };
+        editorRef.current?.onDidFocusEditorText(focus);
+        editorRef.current?.onDidBlurEditorText(blur);
+        // 移除监听
+        // return () => {
+        //   editorRef.current?.removeEventListener('focus', focus);
+        //   editorRef.current?.removeEventListener('blur', blur);
+        // };
+    }, []);
+
+
+    useEffect(() => {
+        if (editorRef.current) {
+            // eg:
+            // editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL, () => {
+            // });
+            shortcutKey?.(editorRef.current, monaco, isActive);
+        }
+    }, [editorRef.current, isActive]);
+
+    useEffect(() => {
+        // 监听浏览器窗口大小变化，重新渲染编辑器
+        const resize = () => {
+            editorRef.current?.layout();
+        };
+        window.addEventListener('resize', resize);
+        return () => {
+            window.removeEventListener('resize', resize);
+        };
+    }, []);
+
+    // 设置报表里面的编辑器的主题
+    useEffect(() => {
+        if (options?.theme) {
+            monaco.editor.setTheme(options.theme);
+        }
+    }, [options?.theme]);
+
+    useImperativeHandle(ref, () => ({
+        getCurrentSelectContent,
+        getCursorContent,
+        getAllContent,
+        setValue,
+        // toFocus,
+    }));
+
+    useEffect(() => {
+        if (appendValue) {
+            appendMonacoValue(editorRef.current, appendValue?.text, appendValue?.range);
+        }
+    }, [appendValue]);
+
+    const setValue = (text: any, range?: IRangeType) => {
+        appendMonacoValue(editorRef.current, text, range);
     };
-  }, []);
 
-  // 如果编辑器聚焦，就设置为true
-  useEffect(() => {
-    const focus = () => {
-      setIsActive(true);
-      props.focusChange && props.focusChange(true);
-    };
-    const blur = () => {
-      setIsActive(false);
-      props.focusChange && props.focusChange(false);
-    };
-    editorRef.current?.onDidFocusEditorText(focus);
-    editorRef.current?.onDidBlurEditorText(blur);
-    // 移除监听
-    // return () => {
-    //   editorRef.current?.removeEventListener('focus', focus);
-    //   editorRef.current?.removeEventListener('blur', blur);
+    // const toFocus = () => {
+    //   editorRef.current?.focus();
     // };
-  }, []);
 
-
-  useEffect(() => {
-    if (editorRef.current) {
-      // eg:
-      // editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL, () => {
-      // });
-      shortcutKey?.(editorRef.current, monaco, isActive);
-    }
-  }, [editorRef.current, isActive]);
-
-  useEffect(() => {
-    // 监听浏览器窗口大小变化，重新渲染编辑器
-    const resize = () => {
-      editorRef.current?.layout();
+    /**
+     * 获取当前选中的内容
+     * @returns
+     */
+    const getCurrentSelectContent = () => {
+        const selection = editorRef.current?.getSelection();
+        if (!selection || selection.isEmpty()) {
+            return '';
+        } else {
+            const selectedText = editorRef.current?.getModel()?.getValueInRange(selection);
+            return selectedText || '';
+        }
     };
-    window.addEventListener('resize', resize);
-    return () => {
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  // 设置报表里面的编辑器的主题
-  useEffect(() => {
-    if (options?.theme) {
-      monaco.editor.setTheme(options.theme);
+    /** 获取光标所在的一条sql语句 */
+const getCursorContent = () => {
+    const editor = editorRef.current;
+    if (!editor) {
+        return '';
     }
-  }, [options?.theme]);
 
-  useImperativeHandle(ref, () => ({
-    getCurrentSelectContent,
-    getAllContent,
-    setValue,
-    // toFocus,
-  }));
-
-  useEffect(() => {
-    if (appendValue) {
-      appendMonacoValue(editorRef.current, appendValue?.text, appendValue?.range);
+    const model = editor.getModel();
+    if (!model) {
+        return '';
     }
-  }, [appendValue]);
 
-  const setValue = (text: any, range?: IRangeType) => {
-    appendMonacoValue(editorRef.current, text, range);
-  };
+    // 获取光标位置
+    const position = editor.getPosition();
+    if (!position) {
+        return '';
+    }
 
-  // const toFocus = () => {
-  //   editorRef.current?.focus();
-  // };
+    const lineNumber = position.lineNumber;
+    const column = position.column;
+    const currentLineContent = model.getLineContent(lineNumber).trim();
 
-  /**
-   * 获取当前选中的内容
-   * @returns
-   */
-  const getCurrentSelectContent = () => {
-    const selection = editorRef.current?.getSelection();
-    if (!selection || selection.isEmpty()) {
-      return '';
+    // 情况1: 所在行为空行
+    if (currentLineContent === '') {
+        return getSqlBetweenSemicolons(model, lineNumber, column);
+    }
+
+    // 情况2: 不为空行且不包含分号
+    if (!currentLineContent.includes(';')) {
+        return getSqlBetweenSemicolons(model, lineNumber, column);
+    }
+
+    // 情况3: 不为空行，最后一个字符是分号(不算空格)
+    if (model.getLineContent(lineNumber).trimEnd().endsWith(';')) {
+        return getPreviousSqlStatement(model, lineNumber, column);
+    }
+
+    // 情况4: 不为空行，行中有分号，根据光标位置查找
+    return getSqlAroundCursor(model, lineNumber, column);
+};
+
+// 辅助函数：获取两个分号之间的SQL语句
+const getSqlBetweenSemicolons = (model: any, lineNumber: number, column: number): string => {
+    let startLine = lineNumber;
+    let startColumn = 1;
+    let endLine = lineNumber;
+    let endColumn = 1;
+
+    // 向前查找上一个分号
+    let foundStart = false;
+    for (let i = lineNumber; i >= 1; i--) {
+        const lineContent = model.getLineContent(i);
+        const lastSemicolon = lineContent.lastIndexOf(';', lineContent.length - 1);
+
+        if (lastSemicolon !== -1) {
+            startLine = i;
+            startColumn = lastSemicolon + 2; // 分号后一位
+            foundStart = true;
+            break;
+        }
+    }
+
+    if (!foundStart) {
+        startLine = 1;
+        startColumn = 1;
+    }
+
+    // 向后查找下一个分号
+    let foundEnd = false;
+    const totalLines = model.getLineCount();
+    for (let i = lineNumber; i <= totalLines; i++) {
+        const lineContent = model.getLineContent(i);
+        const firstSemicolon = lineContent.indexOf(';', column > 1 && i === lineNumber ? column - 1 : 0);
+
+        if (firstSemicolon !== -1) {
+            endLine = i;
+            endColumn = firstSemicolon + 1; // 包含分号
+            foundEnd = true;
+            break;
+        }
+    }
+
+    if (!foundEnd) {
+        endLine = totalLines;
+        endColumn = model.getLineMaxColumn(totalLines);
+    }
+
+    // 提取SQL语句
+    if (startLine === endLine) {
+        return model.getValueInRange({
+            startLineNumber: startLine,
+            startColumn: startColumn,
+            endLineNumber: endLine,
+            endColumn: endColumn
+        });
     } else {
-      const selectedText = editorRef.current?.getModel()?.getValueInRange(selection);
-      return selectedText || '';
+        const lines = [];
+        lines.push(model.getLineContent(startLine).substring(startColumn - 1));
+        for (let i = startLine + 1; i < endLine; i++) {
+            lines.push(model.getLineContent(i));
+        }
+        lines.push(model.getLineContent(endLine).substring(0, endColumn - 1));
+        return lines.join('\n');
     }
-  };
+};
 
-  /** 获取文本所有内容 */
-  const getAllContent = () => {
-    const model = editorRef.current?.getModel();
-    const value = model?.getValue();
-    return value || '';
-  };
+// 辅助函数：获取光标所在行之前的完整SQL语句（以分号结尾的情况）
+const getPreviousSqlStatement = (model: any, lineNumber: number, column: number): string => {
+    let endLine = lineNumber;
+    let endColumn = model.getLineContent(lineNumber).lastIndexOf(';') + 1;
 
-  const createAction = (editor: IEditorIns) => {
-    // 用于控制切换该菜单键的显示
-    editor.createContextKey('shouldShowSqlRunnerAction', true);
+    // 向前查找上一个分号
+    let startLine = lineNumber;
+    let startColumn = 1;
+    let foundStart = false;
 
-    if (!props.addAction || !props.addAction.length) {
-      return;
+    for (let i = lineNumber; i >= 1; i--) {
+        const lineContent = model.getLineContent(i);
+        let searchEnd = i === lineNumber ? model.getLineContent(i).substring(0, endColumn - 1).lastIndexOf(';') : lineContent.length;
+        const lastSemicolon = lineContent.lastIndexOf(';', searchEnd - 1);
+
+        if (lastSemicolon !== -1) {
+            startLine = i;
+            startColumn = lastSemicolon + 2; // 分号后一位
+            foundStart = true;
+            break;
+        }
     }
 
-    props.addAction.forEach((action) => {
-      const { id: _id, label, action: runFn } = action;
-      editor.addAction({
-        id: _id,
-        label,
-        // 控制该菜单键显示
-        precondition: 'shouldShowSqlRunnerAction',
-        // 该菜单键位置
-        contextMenuGroupId: 'navigation',
-        contextMenuOrder: 1.5,
-        // 点击该菜单键后运行
-        run: (ed: IEditorIns) => {
-          const selectedText = editor.getModel()?.getValueInRange(editor.getSelection()!) || '';
-          if (_id === 'changeSQL') {
-            ed.trigger('', quickInputCommand.current, (quickInput) => {
-              quickInput.pick(databaseTypeList).then((selected) => {
-                runFn(selectedText, selected?.label);
-              });
+    if (!foundStart) {
+        startLine = 1;
+        startColumn = 1;
+    }
+
+    // 提取SQL语句
+    if (startLine === endLine) {
+        return model.getValueInRange({
+            startLineNumber: startLine,
+            startColumn: startColumn,
+            endLineNumber: endLine,
+            endColumn: endColumn
+        });
+    } else {
+        const lines = [];
+        lines.push(model.getLineContent(startLine).substring(startColumn - 1));
+        for (let i = startLine + 1; i < endLine; i++) {
+            lines.push(model.getLineContent(i));
+        }
+        lines.push(model.getLineContent(endLine).substring(0, endColumn - 1));
+        return lines.join('\n');
+    }
+};
+
+// 辅助函数：根据光标位置获取两个分号之间的SQL语句
+const getSqlAroundCursor = (model: any, lineNumber: number, column: number): string => {
+    const lineContent = model.getLineContent(lineNumber);
+
+    // 向前查找最近的分号
+    let startLine = lineNumber;
+    let startColumn = 1;
+    let foundStart = false;
+
+    // 先在当前行查找
+    let lastSemicolonBeforeCursor = lineContent.lastIndexOf(';', column - 2);
+    if (lastSemicolonBeforeCursor !== -1) {
+        startLine = lineNumber;
+        startColumn = lastSemicolonBeforeCursor + 2;
+        foundStart = true;
+    } else {
+        // 在之前的行查找
+        for (let i = lineNumber - 1; i >= 1; i--) {
+            const prevLineContent = model.getLineContent(i);
+            const lastSemicolon = prevLineContent.lastIndexOf(';');
+
+            if (lastSemicolon !== -1) {
+                startLine = i;
+                startColumn = lastSemicolon + 2;
+                foundStart = true;
+                break;
+            }
+        }
+    }
+
+    if (!foundStart) {
+        startLine = 1;
+        startColumn = 1;
+    }
+
+    // 向后查找最近的分号
+    let endLine = lineNumber;
+    let endColumn = lineContent.length;
+    let foundEnd = false;
+
+    // 先在当前行查找
+    let firstSemicolonAfterCursor = lineContent.indexOf(';', column - 1);
+    if (firstSemicolonAfterCursor !== -1) {
+        endLine = lineNumber;
+        endColumn = firstSemicolonAfterCursor + 1;
+        foundEnd = true;
+    } else {
+        // 在之后的行查找
+        const totalLines = model.getLineCount();
+        for (let i = lineNumber + 1; i <= totalLines; i++) {
+            const nextLineContent = model.getLineContent(i);
+            const firstSemicolon = nextLineContent.indexOf(';');
+
+            if (firstSemicolon !== -1) {
+                endLine = i;
+                endColumn = firstSemicolon + 1;
+                foundEnd = true;
+                break;
+            }
+        }
+    }
+
+    if (!foundEnd) {
+        endLine = model.getLineCount();
+        endColumn = model.getLineMaxColumn(endLine);
+    }
+
+    // 提取SQL语句
+    if (startLine === endLine) {
+        return model.getValueInRange({
+            startLineNumber: startLine,
+            startColumn: startColumn,
+            endLineNumber: endLine,
+            endColumn: endColumn
+        });
+    } else {
+        const lines = [];
+        lines.push(model.getLineContent(startLine).substring(startColumn - 1));
+        for (let i = startLine + 1; i < endLine; i++) {
+            lines.push(model.getLineContent(i));
+        }
+        lines.push(model.getLineContent(endLine).substring(0, endColumn - 1));
+        return lines.join('\n');
+    }
+};
+
+
+
+    /** 获取文本所有内容 */
+    const getAllContent = () => {
+        const model = editorRef.current?.getModel();
+        const value = model?.getValue();
+        return value || '';
+    };
+
+    const createAction = (editor: IEditorIns) => {
+        // 用于控制切换该菜单键的显示
+        editor.createContextKey('shouldShowSqlRunnerAction', true);
+
+        if (!props.addAction || !props.addAction.length) {
+            return;
+        }
+
+        props.addAction.forEach((action) => {
+            const {id: _id, label, action: runFn} = action;
+            editor.addAction({
+                id: _id,
+                label,
+                // 控制该菜单键显示
+                precondition: 'shouldShowSqlRunnerAction',
+                // 该菜单键位置
+                contextMenuGroupId: 'navigation',
+                contextMenuOrder: 1.5,
+                // 点击该菜单键后运行
+                run: (ed: IEditorIns) => {
+                    const selectedText = editor.getModel()?.getValueInRange(editor.getSelection()!) || '';
+                    if (_id === 'changeSQL') {
+                        ed.trigger('', quickInputCommand.current, (quickInput) => {
+                            quickInput.pick(databaseTypeList).then((selected) => {
+                                runFn(selectedText, selected?.label);
+                            });
+                        });
+                    } else {
+                        runFn(selectedText);
+                    }
+                },
             });
-          } else {
-            runFn(selectedText);
-          }
-        },
-      });
-    });
-  };
+        });
+    };
 
-  return <div ref={ref as any} id={`monaco-editor-${id}`} className={cs(className, styles.editorContainer)} />;
+    return <div ref={ref as any} id={`monaco-editor-${id}`} className={cs(className, styles.editorContainer)}/>;
 }
 
 // text 需要添加的文本
@@ -244,81 +486,80 @@ function MonacoEditor(props: IProps, ref: ForwardedRef<IExportRefFunction>) {
 export type IRangeType = 'end' | 'front' | 'cover' | 'reset' | any;
 
 export const appendMonacoValue = (editor: any, text: any, range: IRangeType = 'end') => {
-  if (!editor) {
-    return;
-  }
-  const model = editor?.getModel && editor.getModel(editor);
-  // 创建编辑操作，将当前文档内容替换为新内容
-  let newRange: IRangeType = range;
-  if (range === 'reset') {
-    editor.setValue(text || '');
-    return;
-  }
-  let newText = text;
-  const lastLine = editor.getModel().getLineCount();
-  const lastLineLength = editor.getModel().getLineMaxColumn(lastLine);
-
-  switch (range) {
-    // 覆盖所有内容
-    case 'cover':
-      newRange = model.getFullModelRange();
-      editor.revealLine(lastLine);
-      break;
-    // 在开头添加内容
-    case 'front':
-      newRange = new monaco.Range(1, 1, 1, 1);
-      editor.revealLine(1);
-      editor.setPosition({ lineNumber: 1, column: 1 });
-      break;
-    // 格式化选中区域的sql
-    case 'select': {
-      const selection = editor.getSelection();
-      if (selection) {
-        newRange = new monaco.Range(
-          selection.startLineNumber,
-          selection.startColumn,
-          selection.endLineNumber,
-          selection.endColumn,
-        );
-      }
-      break;
+    if (!editor) {
+        return;
     }
-    // 在末尾添加内容
-    case 'end':
-      newRange = new monaco.Range(lastLine, lastLineLength, lastLine, lastLineLength);
-      newText = `${text}`;
-      break;
-    // 在光标处添加内容
-    case 'cursor':
-      {
-        const position = editor.getPosition();
-        if (position) {
-          newRange = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+    const model = editor?.getModel && editor.getModel(editor);
+    // 创建编辑操作，将当前文档内容替换为新内容
+    let newRange: IRangeType = range;
+    if (range === 'reset') {
+        editor.setValue(text || '');
+        return;
+    }
+    let newText = text;
+    const lastLine = editor.getModel().getLineCount();
+    const lastLineLength = editor.getModel().getLineMaxColumn(lastLine);
+
+    switch (range) {
+        // 覆盖所有内容
+        case 'cover':
+            newRange = model.getFullModelRange();
+            editor.revealLine(lastLine);
+            break;
+        // 在开头添加内容
+        case 'front':
+            newRange = new monaco.Range(1, 1, 1, 1);
+            editor.revealLine(1);
+            editor.setPosition({lineNumber: 1, column: 1});
+            break;
+        // 格式化选中区域的sql
+        case 'select': {
+            const selection = editor.getSelection();
+            if (selection) {
+                newRange = new monaco.Range(
+                    selection.startLineNumber,
+                    selection.startColumn,
+                    selection.endLineNumber,
+                    selection.endColumn,
+                );
+            }
+            break;
         }
-      }
-      break;
-    default:
-      break;
-  }
+        // 在末尾添加内容
+        case 'end':
+            newRange = new monaco.Range(lastLine, lastLineLength, lastLine, lastLineLength);
+            newText = `${text}`;
+            break;
+        // 在光标处添加内容
+        case 'cursor': {
+            const position = editor.getPosition();
+            if (position) {
+                newRange = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+            }
+        }
+            break;
+        default:
+            break;
+    }
 
-  const op = {
-    range: newRange,
-    text: newText,
-  };
+    const op = {
+        range: newRange,
+        text: newText,
+    };
 
-  // decorations?: IModelDeltaDecoration[]: 一个数组类型的参数，用于指定插入的文本的装饰。可以用来设置文本的样式、颜色、背景色等。如果不需要设置装饰，可以忽略此参数。
-  const decorations = [{}]; // 解决新增的文本默认背景色为灰色
-  editor.executeEdits('setValue', [op], decorations);
-  const addedLastLine = editor.getModel().getLineCount();
-  // const addedLastLineLength = editor.getModel().getLineMaxColumn(lastLine);
+    // decorations?: IModelDeltaDecoration[]: 一个数组类型的参数，用于指定插入的文本的装饰。可以用来设置文本的样式、颜色、背景色等。如果不需要设置装饰，可以忽略此参数。
+    const decorations = [{}]; // 解决新增的文本默认背景色为灰色
+    editor.executeEdits('setValue', [op], decorations);
+    const addedLastLine = editor.getModel().getLineCount();
+    // const addedLastLineLength = editor.getModel().getLineMaxColumn(lastLine);
 
-  if (range === 'end') {
-    setTimeout(() => {
-      editor.revealLine(addedLastLine + 1);
-      // editor.setPosition({ lineNumber: addedLastLine, column: addedLastLineLength });
-      // editor.focus();
-    }, 0);
-  }
+    if (range === 'end') {
+        setTimeout(() => {
+            editor.revealLine(addedLastLine + 1);
+            // editor.setPosition({ lineNumber: addedLastLine, column: addedLastLineLength });
+            // editor.focus();
+        }, 0);
+    }
 };
 
 export default forwardRef(MonacoEditor);
