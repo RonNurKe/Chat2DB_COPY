@@ -136,12 +136,12 @@ export default function AboutUs(props: IProps) {
         <div className={styles.updateRuleTitle}>{i18n('setting.title.updateRule')}</div>
         <Radio.Group className={styles.updateRuleGroup} onChange={onChangeUpdateRul} value={updateRule}>
           <Space direction="vertical">
-            <Radio className={styles.updateRuleRadio} value="auto">
-              {i18n('setting.text.autoUpdate')}
-            </Radio>
-            <Radio className={styles.updateRuleRadio} value="manual">
-              {i18n('setting.text.manualUpdate')}
-            </Radio>
+            {/*<Radio className={styles.updateRuleRadio} value="auto">*/}
+            {/*  {i18n('setting.text.autoUpdate')}*/}
+            {/*</Radio>*/}
+            {/*<Radio className={styles.updateRuleRadio} value="manual">*/}
+            {/*  {i18n('setting.text.manualUpdate')}*/}
+            {/*</Radio>*/}
           </Space>
         </Radio.Group>
       </div>

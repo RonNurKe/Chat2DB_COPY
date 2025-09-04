@@ -310,23 +310,23 @@ function ConsoleEditor(props: IProps, ref: ForwardedRef<IConsoleRef>) {
   };
 
   const addAction = [
-    {
-      id: 'explainSQL',
-      label: i18n('common.text.explainSQL'),
-      action: (selectedText: string) => handleAIChatInEditor(selectedText, IPromptType.SQL_EXPLAIN),
-    },
-    {
-      id: 'optimizeSQL',
-      label: i18n('common.text.optimizeSQL'),
-      action: (selectedText: string) => handleAIChatInEditor(selectedText, IPromptType.SQL_OPTIMIZER),
-    },
-    {
-      id: 'changeSQL',
-      label: i18n('common.text.conversionSQL'),
-      action: (selectedText: string, ext?: string) => {
-        handleAIChatInEditor(selectedText, IPromptType.SQL_2_SQL, ext);
-      },
-    },
+    // {
+    //   id: 'explainSQL',
+    //   label: i18n('common.text.explainSQL'),
+    //   action: (selectedText: string) => handleAIChatInEditor(selectedText, IPromptType.SQL_EXPLAIN),
+    // },
+    // {
+    //   id: 'optimizeSQL',
+    //   label: i18n('common.text.optimizeSQL'),
+    //   action: (selectedText: string) => handleAIChatInEditor(selectedText, IPromptType.SQL_OPTIMIZER),
+    // },
+    // {
+    //   id: 'changeSQL',
+    //   label: i18n('common.text.conversionSQL'),
+    //   action: (selectedText: string, ext?: string) => {
+    //     handleAIChatInEditor(selectedText, IPromptType.SQL_2_SQL, ext);
+    //   },
+    // },
   ];
 
   /**
@@ -370,6 +370,11 @@ function ConsoleEditor(props: IProps, ref: ForwardedRef<IConsoleRef>) {
       const value = editorRef.current?.getCurrentSelectContent();
       executeSQL(value);
     });
+// 执行
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
+          const value = editorRef.current?.getCursorContent();
+          executeSQL(value);
+      });
 
     // 执行
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL, () => {

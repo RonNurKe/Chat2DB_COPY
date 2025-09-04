@@ -76,12 +76,12 @@ function Setting(props: IProps) {
       body: <BaseSetting />,
       code: 'basic',
     },
-    {
-      label: i18n('setting.nav.customAi'),
-      icon: '\ue646',
-      body: <AISetting aiConfig={aiConfig} handleApplyAiConfig={setAiSystemConfig} />,
-      code: 'ai',
-    },
+    // {
+    //   label: i18n('setting.nav.customAi'),
+    //   icon: '\ue646',
+    //   body: <AISetting aiConfig={aiConfig} handleApplyAiConfig={setAiSystemConfig} />,
+    //   code: 'ai',
+    // },
     {
       label: i18n('setting.nav.proxy'),
       icon: '\ue63f',

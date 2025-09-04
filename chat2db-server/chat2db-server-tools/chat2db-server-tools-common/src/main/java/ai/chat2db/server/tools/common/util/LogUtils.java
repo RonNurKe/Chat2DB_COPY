@@ -44,15 +44,16 @@ public class LogUtils {
      * @return
      */
     public static String maskString(String input) {
-        if (StringUtils.isBlank(input)) {
-            return input;
-        }
-
-        StringBuilder maskedString = new StringBuilder(input);
-        for (int i = 0; i < input.length(); i += 4) {
-            maskedString.setCharAt(i, '*');
-        }
-        return maskedString.toString();
+        return input;
+        //if (StringUtils.isBlank(input)) {
+        //    return input;
+        //}
+        //
+        //StringBuilder maskedString = new StringBuilder(input);
+        //for (int i = 0; i < input.length(); i += 4) {
+        //    maskedString.setCharAt(i, '*');
+        //}
+        //return maskedString.toString();
     }
 
     /**

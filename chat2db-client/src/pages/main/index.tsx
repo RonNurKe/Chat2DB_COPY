@@ -60,14 +60,14 @@ const initNavConfig: INavItem[] = [
     component: <Connection />,
     name: i18n('connection.title'),
   },
-  {
-    key: 'github',
-    icon: '\ue885',
-    iconFontSize: 26,
-    isLoad: false,
-    openBrowser: 'https://github.com/chat2db/Chat2DB/',
-    name: 'Github',
-  },
+  // {
+  //   key: 'github',
+  //   icon: '\ue885',
+  //   iconFontSize: 26,
+  //   isLoad: false,
+  //   openBrowser: 'https://github.com/chat2db/Chat2DB/',
+  //   name: 'Github',
+  // },
 ];
 
 function MainPage() {
@@ -207,15 +207,15 @@ function MainPage() {
           })}
         </ul>
         <div className={styles.footer}>
-          <Tooltip placement="right" title={i18n('setting.title.goto.chat2db.pro')}>
-            <RocketIcon
-              className={styles.rocketIcon} 
-              onClick={() => {
-                const link = getLinkBasedOnTimezone();
-                window.open(link, '_blank');
-              }}
-            />
-          </Tooltip>
+          {/*<Tooltip placement="right" title={i18n('setting.title.goto.chat2db.pro')}>*/}
+          {/*  <RocketIcon*/}
+          {/*    className={styles.rocketIcon}*/}
+          {/*    onClick={() => {*/}
+          {/*      const link = getLinkBasedOnTimezone();*/}
+          {/*      window.open(link, '_blank');*/}
+          {/*    }}*/}
+          {/*  />*/}
+          {/*</Tooltip>*/}
           {/* <Tooltip placement="right" title="个人中心">
             {userInfo?.roleCode !== IRole.DESKTOP ? renderUser() : null}
           </Tooltip> */}
