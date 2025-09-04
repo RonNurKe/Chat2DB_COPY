@@ -3,6 +3,7 @@ package ai.chat2db.spi;
 import ai.chat2db.spi.model.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SqlBuilder<T> {
 
@@ -12,7 +13,7 @@ public interface SqlBuilder<T> {
      * @param table
      * @return
      */
-     String buildCreateTableSql(T table);
+    String buildCreateTableSql(T table);
 
 
     /**
@@ -75,6 +76,13 @@ public interface SqlBuilder<T> {
      */
     String buildOrderBySql(String originSql, List<OrderBy> orderByList);
 
+    /**
+     * @param originSql
+     * @param groupByList
+     * @return
+     */
+    String buildGroupBySql(String originSql, List<String> groupByList);
+
 
     /**
      * generate sql based on results
@@ -83,9 +91,43 @@ public interface SqlBuilder<T> {
 
     /**
      * DML SQL
+     *
      * @param table
      * @param type
      * @return
      */
-    String getTableDmlSql(T table,String type);
+    String getTableDmlSql(T table, String type);
+
+    /**
+     *
+     * @param databaseName
+     * @param schemaName
+     * @param tableName
+     * @return
+     */
+    String buildTableQuerySql(String databaseName, String schemaName, String tableName);
+
+    /**
+     * Generate create sequence sql
+     *
+     * @param sequence
+     * @return
+     */
+    String buildCreateSequenceSql(Sequence sequence);
+
+
+    /**
+     * Generate modify sequence sql
+     *
+     * @param newSequence
+     * @param oldSequence
+     * @return
+     */
+    String buildModifySequenceSql(Sequence oldSequence, Sequence newSequence);
+
+    String buildSingleInsertSql(String databaseName, String schemaName, String tableName, List<String> columnList, List<String> valueList);
+
+    String buildMultiInsertSql(String databaseName, String schemaName, String tableName, List<String> columnList, List<List<String>> valueLists);
+
+    String buildUpdateSql(String databaseName, String schemaName, String tableName, Map<String, String> row,Map<String,String> primaryKeyMap);
 }

@@ -12,6 +12,7 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
+import com.oceanbase.tools.sqlparser.oracle.PlSqlLexer;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -124,17 +125,36 @@ public class SqlUtils {
 
     private static final String EVENT_REGEX = "(?i)\\bcreate\\s+event\\b.*?\\bend\\b";
 
-    public static List<String> parse(String sql, DbType dbType) {
+    public static List<String> parse(String sql, DbType dbType, boolean removeComment) {
         List<String> list = new ArrayList<>();
         try {
             if (StringUtils.isBlank(sql)) {
                 return list;
             }
-            if (DbType.mysql.equals(dbType) ||
-                    DbType.oracle.equals(dbType) ||
-                    DbType.oceanbase.equals(dbType)) {
-                sql = updateNow(sql, dbType);
-                return split(new SqlSplitProcessor(dbType, false,false), sql);
+            if (removeComment) {
+                sql = SQLParserUtils.removeComment(sql, dbType);
+            }
+            try {
+                if (DbType.oracle.equals(dbType)) {
+                    SqlSplitter sqlSplitter = new SqlSplitter(PlSqlLexer.class, ";", false);
+                    sqlSplitter.setRemoveCommentPrefix(true);
+                    List<SplitSqlString> sqls = sqlSplitter.split(sql);
+                    return sqls.stream().map(splitSqlString -> removeComment ? SQLParserUtils.removeComment(splitSqlString.getStr(), dbType) : splitSqlString.getStr()).collect(Collectors.toList());
+                }
+            } catch (Exception e) {
+                log.error("sqlSplitter error", e);
+            }
+            try {
+                if (DbType.mysql.equals(dbType) ||
+                        DbType.mariadb.equals(dbType) ||
+                        DbType.oceanbase.equals(dbType)) {
+                    sql = updateNow(sql, dbType);
+                    SqlSplitProcessor sqlSplitProcessor = new SqlSplitProcessor(dbType, true, true);
+                    sqlSplitProcessor.setDelimiter(";");
+                    return split(sqlSplitProcessor, sql, dbType, removeComment);
+                }
+            } catch (Exception e) {
+                log.error("sqlSplitProcessor error", e);
             }
 //            sql = removeDelimiter(sql);
             if (StringUtils.isBlank(sql)) {
@@ -154,7 +174,11 @@ public class SqlUtils {
             try {
                 return splitWithCreateEvent(sql, dbType);
             } catch (Exception e1) {
-                return SQLParserUtils.splitAndRemoveComment(sql, dbType);
+                if (removeComment) {
+                    return SQLParserUtils.splitAndRemoveComment(sql, dbType);
+                }{
+                    return SQLParserUtils.split(sql, dbType);
+                }
             }
         }
         return list;
@@ -224,8 +248,11 @@ public class SqlUtils {
     private static final String DEFAULT_VALUE = "CHAT2DB_UPDATE_TABLE_DATA_USER_FILLED_DEFAULT";
 
     public static String getSqlValue(String value, String dataType) {
-        if (value == null || value == "") {
+        if (value == null) {
             return null;
+        }
+        if ("".equals(value)) {
+            return "''";
         }
         if (DEFAULT_VALUE.equals(value)) {
             return "DEFAULT";
@@ -259,13 +286,13 @@ public class SqlUtils {
         return false;
     }
 
-    private static List<String> split(SqlSplitProcessor processor, String sql) {
+    private static List<String> split(SqlSplitProcessor processor, String sql, DbType dbType, boolean removeComment) {
         StringBuffer buffer = new StringBuffer();
         List<SplitSqlString> sqls = processor.split(buffer, sql);
         String bufferStr = buffer.toString();
         if (bufferStr.trim().length() != 0) {
             // if buffer is not empty, there will be some errors in syntax
-            log.info("sql processor's buffer is not empty, there may be some errors. buffer={}", bufferStr);
+//            log.info("sql processor's buffer is not empty, there may be some errors. buffer={}", bufferStr);
             int lastSqlOffset;
             if (sqls.size() == 0) {
                 int index = sql.indexOf(bufferStr.trim(), 0);
@@ -276,91 +303,55 @@ public class SqlUtils {
                 lastSqlOffset = index == -1 ? from : index;
             }
             sqls.add(new SplitSqlString(lastSqlOffset, bufferStr));
+
+//            String sqlstr = SQLParserUtils.removeComment(sql, dbType);
+//            return Lists.newArrayList(sqlstr);
         }
-        return sqls.stream().map(SplitSqlString::getStr).collect(Collectors.toList());
+        return sqls.stream().map(splitSqlString -> removeComment ? SQLParserUtils.removeComment(splitSqlString.getStr(), dbType) : splitSqlString.getStr()).collect(Collectors.toList());
     }
 
     public static void main(String[] args) {
-        String sql = "DELIMITER //\n" +
-                "\n" +
-                "CREATE TRIGGER YS_production_dispatch_list_update\n" +
-                "BEFORE UPDATE ON production_dispatch_list\n" +
-                "FOR EACH ROW\n" +
-                "BEGIN\n" +
-                "  DECLARE rework_count INT DEFAULT 0;\n" +
-                "  DECLARE scrap_count INT DEFAULT 0;\n" +
-                "  DECLARE qualified_rate DOUBLE;\n" +
-                "\n" +
-                "    IF NEW.actual_completion_time IS NOT NULL THEN\n" +
-                "\n" +
-                "        SELECT COUNT(1) \n" +
-                "        INTO rework_count \n" +
-                "        FROM (\n" +
-                "            SELECT \n" +
-                "                uct.unique_code zz1, \n" +
-                "                fm.unique_code zz2, \n" +
-                "                ROW_NUMBER() OVER (PARTITION BY uct.unique_code, fm.unique_code ORDER BY fm.id) js\n" +
-                "            FROM (\n" +
-                "                SELECT DISTINCT unique_code\n" +
-                "                FROM mars_platform_prod.check_task\n" +
-                "                WHERE list_id = NEW.id\n" +
-                "            ) AS uct\n" +
-                "            INNER JOIN mars_platform_prod.flow_mgr AS fm \n" +
-                "            ON uct.unique_code = fm.unique_code \n" +
-                "            AND fm.is_deleted = 0 \n" +
-                "            AND handle_result = 3\n" +
-                "        ) AS bg \n" +
-                "        WHERE js = 1;\n" +
-                "        SET NEW.Rework_number_YS = rework_count;\n" +
-                "\n" +
-                "\n" +
-                "        SELECT COUNT(1) \n" +
-                "        INTO scrap_count \n" +
-                "        FROM (\n" +
-                "            SELECT \n" +
-                "                uct.unique_code zz1, \n" +
-                "                fm.unique_code zz2, \n" +
-                "                ROW_NUMBER() OVER (PARTITION BY uct.unique_code, fm.unique_code ORDER BY fm.id) js\n" +
-                "            FROM (\n" +
-                "                SELECT DISTINCT unique_code\n" +
-                "                FROM mars_platform_prod.check_task\n" +
-                "                WHERE list_id = NEW.id\n" +
-                "            ) AS uct\n" +
-                "            INNER JOIN mars_platform_prod.flow_mgr AS fm \n" +
-                "            ON uct.unique_code = fm.unique_code \n" +
-                "            AND fm.is_deleted = 0 \n" +
-                "            AND handle_result = 5\n" +
-                "        ) AS bg \n" +
-                "        WHERE js = 1;\n" +
-                "        SET NEW.Scrap_number_YS = scrap_count;\n" +
-                "\n" +
-                "        SELECT ROUND(SUM(CASE WHEN zz2 IS NULL THEN 1 ELSE 0 END) * 100.0 / COUNT(zz1), 2) \n" +
-                "        INTO qualified_rate \n" +
-                "        FROM (\n" +
-                "            SELECT \n" +
-                "                uct.unique_code zz1, \n" +
-                "                fm.unique_code zz2, \n" +
-                "                ROW_NUMBER() OVER (PARTITION BY uct.unique_code, fm.unique_code ORDER BY fm.id) js\n" +
-                "            FROM (\n" +
-                "                SELECT DISTINCT unique_code\n" +
-                "                FROM mars_platform_prod.check_task\n" +
-                "                WHERE list_id = NEW.id\n" +
-                "            ) AS uct\n" +
-                "            LEFT JOIN mars_platform_prod.flow_mgr AS fm \n" +
-                "            ON uct.unique_code = fm.unique_code \n" +
-                "            AND fm.is_deleted = 0\n" +
-                "            AND fm.`approval_result` = 1\n" +
-                "        ) AS bg \n" +
-                "        WHERE js = 1;\n" +
-                "        SET NEW.qualified_one_rate_YS = qualified_rate;\n" +
-                "    END IF;\n" +
-                "END //\n" +
-                "\n" +
-                "DELIMITER ;\n" +
-                "\n" +
-                "\n" + "select * from t1;select * from t2";
-        List<String> offsetStrings =  parse(sql, DbType.mysql);
-        System.out.println(offsetStrings);
+
+    }
+
+    public static String quoteObjectName(String name) {
+        return quoteObjectName(name, "\"");
+    }
+
+    public static String quoteObjectName(String name, String quoteSymbol) {
+        if (StringUtils.isNotBlank(name)) {
+            boolean startsWithQuote = name.startsWith(quoteSymbol);
+            boolean endsWithQuote = name.endsWith(quoteSymbol);
+
+            if (!startsWithQuote && !endsWithQuote) {
+                // 如果前后都没有quoteSymbol
+                return quoteSymbol + name + quoteSymbol;
+            } else if (startsWithQuote && !endsWithQuote) {
+                // 如果只有前面有quoteSymbol
+                return quoteSymbol + quoteSymbol + name + quoteSymbol;
+            } else if (!startsWithQuote) {
+                // 如果只有后面有quoteSymbol
+                return quoteSymbol + name + quoteSymbol + quoteSymbol;
+            }
+            // 如果前后都有quoteSymbol，直接返回原字符串
+            return name;
+        }
+        // 如果name为空或仅包含空白字符，返回原字符串
+        return name;
+    }
+
+    /**
+     * String input = "INTERVAL DAY(2) TO SECOND(6)";
+     * remove (2) and (6)
+     *
+     * @param input
+     * @return
+     */
+    public static String removeDigits(String input) {
+        if (StringUtils.isBlank(input)) {
+            return input;
+        }
+        return input.replaceAll("\\(\\d+\\)", "");
     }
 
 }

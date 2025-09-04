@@ -91,5 +91,18 @@ public interface DatabaseService {
      */
     ActionResult modifySchema( SchemaOperationParam request);
 
+    /**
+     * Export database
+     *
+     * @param param
+     * @return
+     */
     String exportDatabase(DatabaseExportParam param) throws SQLException;
+
+    /**
+     * Query the user under a database
+     *
+     * @return User list
+     */
+    ListResult<String> getUsernameList();
 }

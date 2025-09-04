@@ -5,7 +5,6 @@ import java.util.List;
 
 import ai.chat2db.server.tools.base.wrapper.result.PageResult;
 import ai.chat2db.spi.model.*;
-import cn.hutool.db.Page;
 import jakarta.validation.constraints.NotEmpty;
 
 /**
@@ -242,7 +241,7 @@ public interface MetaData {
      * Get column builder.
      *
      */
-    ValueHandler getValueHandler();
+    ValueProcessor getValueProcessor();
 
 
     /**
@@ -261,5 +260,38 @@ public interface MetaData {
      * @return
      */
     List<String> getSystemSchemas();
+
+    /**
+     * Querying DDL information
+     *
+     * @param connection
+     * @param databaseName
+     * @param tableName
+     * @return
+     */
+    String sequenceDDL(Connection connection, @NotEmpty String databaseName, String schemaName,
+                       @NotEmpty String tableName);
+
+    /**
+     * Querying sequences simple information
+     *
+     * @param connection
+     * @param databaseName
+     * @return
+     */
+    List<SimpleSequence> sequences(Connection connection, String databaseName, String schemaName);
+
+    /**
+     * Querying all sequence under a schema.
+     *
+     * @param connection
+     * @param databaseName
+     * @param schemaName
+     * @param sequenceName
+     * @return
+     */
+    Sequence sequences(Connection connection, @NotEmpty String databaseName, String schemaName, String sequenceName);
+
+    List<String> usernames(Connection connection);
 
 }
