@@ -1,7 +1,20 @@
 <div align="center">
-<a href="https://trendshift.io/repositories/11808" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11808" alt="CodePhiliaX%2FChat2DB | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+  <h2>🚀 Zoer is Launching</h2>
+  <p><strong>Powered by Chat2DB Team - AI-powered app builder that creates professional applications in minutes, no coding required</strong></p>
+  
+  <a href="https://zoer.ai/?utm_source=chat2db&utm_medium=banner&utm_campaign=github" target="_blank">
+    <img width="1000" height="auto" alt="Zoer - AI App Builder" src="https://github.com/user-attachments/assets/2f2a682d-9cc0-4470-93d3-19b4f1f6589e" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  </a>
+  
+  <br/><br/>
+  
+  ---
+  
+  <br/>
+  
+  <a href="https://trendshift.io/repositories/11808" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11808" alt="CodePhiliaX%2FChat2DB | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+  </a>
 </div>
-<br/>
 
 <div align="center">
   
@@ -36,12 +49,6 @@
   <a href="./README_JA.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-d9d9d9"></a>
 
 </div>
-
-
-https://github.com/user-attachments/assets/4ae824cf-7d14-4d5b-9ceb-66481bcefc19
-
-
-Chat2DB is an intelligent, universal SQL client and data reporting tool that integrates AI capabilities. Chat2DB helps you write SQL queries faster, manage databases, generate reports, explore data, and interact with multiple databases. Chat2DB is an open-source project, and we welcome your contributions.
 
 **1. Intelligent SQL Generation**:  
 Chat2DB Pro supports AI-driven intelligent SQL development to help you write SQL queries faster.
